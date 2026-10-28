@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나의 미래 스튜디오</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap');
+        
+        body {
+            font-family: 'Nanum Gothic', sans-serif;
+            background-color: #f0fdf4; /* 차분하고 편안한 연녹색 배경 */
+            color: #1e293b;
+        }
+
+        /* 부드러운 전환 효과 */
+        .step-container {
+            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+        }
+        
+        .hidden-step {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .active-step {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 직업 선택 라디오 버튼 숨기기 및 스타일링 (현재 드롭다운 사용으로 미사용이나 확장성 위해 유지) */
+        input[type="radio"]:checked + label {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.5);
+        }
+
+        .custom-input {
+            transition: all 0.2s;
+        }
+        .custom-input:focus {
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8">
+
+    <!-- 메시지 모달 (alert 대체) -->
+    <div id="message-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl text-center">
+            <p id="message-text" class="text-2xl font-bold mb-8 text-slate-800"></p>
+            <button onclick="closeMessage()" class="bg-blue-500 hover:bg-blue-600 text-white text-xl font-bold py-3 px-8 rounded-2xl w-full">확인</button>
+        </div>
+    </div>
+
+    <div class="max-w-3xl w-full bg-white rounded-3xl shadow-xl overflow-hidden border-4 border-green-100">
+        <!-- 헤더 영역 -->
+        <div class="bg-green-500 p-6 text-center text-white">
+            <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">✨ 나의 미래 스튜디오</h1>
+            <p class="text-lg md:text-xl mt-2 opacity-90">내가 꿈꾸는 미래의 모습을 상상해봐요!</p>
+        </div>
+
+        <!-- 진행 상태 바 -->
+        <div class="flex justify-center p-4 bg-green-50 border-b-2 border-green-100">
+            <div class="flex items-center space-x-1 sm:space-x-2 md:space-x-4 text-base md:text-xl font-bold">
+                <span id="indicator-1" class="text-green-600">① 하고 싶은 일</span>
+                <span class="text-slate-300">➔</span>
+                <span id="indicator-2" class="text-slate-400">② 미래 준비(촬영)</span>
+                <span class="text-slate-300">➔</span>
+                <span id="indicator-3" class="text-slate-400">③ 영상 만들기</span>
+            </div>
+        </div>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <div class="p-4 sm:p-6 md:p-10 min-h-[500px] flex flex-col">
+            
+            <!-- 단계 1: 하고 싶은 일 이야기하기 -->
+            <div id="step-1" class="step-container active-step flex-grow">
+                
+                <div class="mb-8 bg-slate-50 p-6 rounded-2xl border-2 border-slate-100">
+                    <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-center">이름이 무엇인가요?</h2>
+                    <input type="text" id="student-name" class="custom-input w-full text-2xl p-4 rounded-xl border-4 border-slate-200 focus:border-green-500 outline-none bg-white text-center" placeholder="이름을 입력하세요">
+                </div>
+
+                <h2 class="text-2xl sm:text-3xl font-bold mb-6 text-center">어떤 일을 하고 싶나요?</h2>
+                
+                <!-- 직업군 및 세부 직업 선택 드롭다운 -->
+                <div class="flex flex-col md:flex-row gap-4 mb-8">
+                    <div class="flex-1">
+                        <label for="job-category" class="block text-xl font-bold mb-2 text-slate-600 pl-2">1. 직업군 선택</label>
+                        <select id="job-category" class="custom-input w-full text-xl p-4 rounded-xl border-4 border-slate-200 focus:border-green-500 outline-none bg-white cursor-pointer font-bold text-slate-700" onchange="updateJobOptions()">
+                            <option value="">-- 직업군을 선택하세요 --</option>
+                            <!-- JS에서 옵션 추가됨 -->
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label for="job-specific" class="block text-xl font-bold mb-2 text-slate-600 pl-2">2. 세부 직업 선택</label>
+                        <select id="job-specific" class="custom-input w-full text-xl p-4 rounded-xl border-4 border-slate-200 focus:border-green-500 outline-none bg-white cursor-pointer font-bold text-slate-700" onchange="handleJobSelect()" disabled>
+                            <option value="">-- 먼저 직업군을 선택하세요 --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 직업 특징 표시 및 수정 영역 -->
+                <div id="characteristics-area" class="hidden bg-blue-50 p-6 rounded-2xl border-2 border-blue-100 mb-8">
+                    <h3 class="text-2xl font-bold mb-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+                        <span>이 직업의 특징은 무엇일까요?</span>
+                        <span class="text-sm font-normal text-blue-600 bg-blue-100 px-3 py-1 rounded-full whitespace-nowrap">선생님 수정 가능</span>
+                    </h3>
+                    <div class="space-y-4">
+                        <input type="text" id="char-1" class="custom-input w-full text-xl p-4 rounded-xl border-2 border-slate-300 focus:border-blue-500 outline-none" placeholder="특징 1">
+                        <input type="text" id="char-2" class="custom-input w-full text-xl p-4 rounded-xl border-2 border-slate-300 focus:border-blue-500 outline-none" placeholder="특징 2">
+                        <input type="text" id="char-3" class="custom-input w-full text-xl p-4 rounded-xl border-2 border-slate-300 focus:border-blue-500 outline-none" placeholder="특징 3">
+                    </div>
+                </div>
+
+                <div class="mb-8">
+                    <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-center">미래의 내 모습을 짧은 이야기로 적어봐요!</h2>
+                    <textarea id="story-input" rows="3" class="custom-input w-full text-2xl p-6 rounded-2xl border-4 border-slate-200 focus:border-green-500 outline-none resize-none" placeholder="예: 나는 매일 아침 사람들에게 맛있는 커피와 웃음을 전해주는 바리스타가 될 거야!"></textarea>
+                </div>
+
+                <div class="mt-auto flex justify-end">
+                    <button onclick="nextStep(2)" class="bg-green-500 hover:bg-green-600 text-white text-2xl font-bold py-4 px-10 rounded-2xl shadow-lg transition-transform transform hover:-translate-y-1">촬영하러 가기 ➔</button>
+                </div>
+            </div>
+
+            <!-- 단계 2: 미래의 내 모습 준비하기 (촬영) -->
+            <div id="step-2" class="step-container hidden-step flex-grow flex flex-col items-center">
+                <h2 class="text-3xl font-bold mb-6 text-center">미래의 내 모습을 촬영해요! (사진/동영상)</h2>
+                
+                <!-- 미디어 컨테이너: 일정 비율(4:3)과 최소 높이를 가져 화면 찌그러짐 방지 -->
+                <div class="w-full max-w-2xl aspect-[4/3] min-h-[300px] bg-slate-50 rounded-2xl border-4 border-dashed border-slate-300 relative overflow-hidden mb-6 flex flex-col items-center justify-center">
+                    
+                    <!-- 미리보기 영역 -->
+                    <img id="photo-preview" class="absolute inset-0 w-full h-full object-contain hidden z-10 bg-black/10" alt="사진 미리보기">
+                    <video id="video-preview" class="absolute inset-0 w-full h-full object-contain hidden z-10 bg-black/10" controls></video>
+                    
+                    <!-- 비디오 스트림 영역 (카메라 촬영 시) -->
+                    <video id="camera-stream" class="absolute inset-0 w-full h-full object-cover hidden z-10" autoplay playsinline muted></video>
+                    
+                    <!-- 녹화 중 표시기 -->
+                    <div id="recording-indicator" class="absolute top-4 left-4 z-30 hidden items-center space-x-2 bg-black/50 text-white px-4 py-2 rounded-full font-bold">
+                        <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                        <span>녹화 중...</span>
+                    </div>
+
+                    <div id="photo-controls" class="z-20 flex flex-col items-center space-y-4 w-full max-w-sm bg-white/90 p-6 rounded-3xl backdrop-blur-sm shadow-sm">
+                        <!-- 카메라 버튼 -->
+                        <button onclick="startCamera()" class="w-full bg-blue-500 hover:bg-blue-600 text-white text-2xl font-bold py-5 px-6 rounded-2xl shadow-md flex items-center justify-center space-x-2">
+                            <span>🎥 카메라 켜기</span>
+                        </button>
+                        
+                        <div class="text-slate-500 font-bold text-xl">또는</div>
+                        
+                        <!-- 파일 선택 버튼 (기기 앨범 - 사진/영상) -->
+                        <label class="w-full bg-purple-500 hover:bg-purple-600 text-white text-2xl font-bold py-5 px-6 rounded-2xl shadow-md flex items-center justify-center space-x-2 cursor-pointer text-center">
+                            <span>📁 앨범에서 선택하기</span>
+                            <input type="file" accept="image/*,video/*" class="hidden" id="file-upload" onchange="handleFileUpload(event)">
+                        </label>
+                    </div>
+
+                    <!-- 다시 찍기 버튼 (사진/영상 촬영 완료 후 표시) -->
+                    <button id="retake-btn" onclick="resetMedia()" class="z-30 absolute top-4 right-4 hidden bg-white text-slate-800 text-lg font-bold py-2 px-4 rounded-xl shadow-md border-2 border-slate-200 hover:bg-slate-100">
+                        🔄 다시 준비하기
+                    </button>
+                </div>
+
+                <!-- 캡처/녹화 버튼 (카메라 스트림 활성화 시 표시, 겹치지 않게 컨테이너 밖으로 분리) -->
+                <div id="capture-controls" class="hidden w-full max-w-2xl mb-8">
+                    <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 px-2">
+                        <button onclick="stopCamera()" class="flex-1 bg-slate-500 hover:bg-slate-600 text-white text-xl font-bold py-4 rounded-2xl shadow-lg transition-colors">취소</button>
+                        <button onclick="takePhoto()" class="flex-1 bg-green-500 hover:bg-green-600 text-white text-xl font-bold py-4 rounded-2xl shadow-lg border-2 border-white transition-colors">📸 사진 찍기</button>
+                        <button id="record-btn" onclick="toggleRecording()" class="flex-1 bg-red-500 hover:bg-red-600 text-white text-xl font-bold py-4 rounded-2xl shadow-lg border-2 border-white transition-colors">🔴 영상 녹화</button>
+                    </div>
+                </div>
+
+                <div class="w-full flex justify-between mt-auto pt-4 border-t-2 border-slate-100">
+                    <button onclick="prevStep(1)" class="bg-slate-300 hover:bg-slate-400 text-slate-800 text-2xl font-bold py-4 px-8 rounded-2xl transition-colors">⬅ 이전</button>
+                    <button onclick="nextStep(3)" class="bg-pink-500 hover:bg-pink-600 text-white text-2xl font-bold py-4 px-10 rounded-2xl shadow-lg transition-transform transform hover:-translate-y-1">✨ 완성하기</button>
+                </div>
+            </div>
+
+            <!-- 결과 화면 (진로 영상 만들기) -->
+            <div id="step-3" class="step-container hidden-step flex-grow flex flex-col items-center">
+                <div class="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border-8 border-yellow-300 relative mt-4">
+                    <!-- 학생 정보 태그 -->
+                    <div class="absolute top-4 left-4 bg-yellow-400 text-yellow-900 text-lg md:text-xl font-extrabold py-2 px-5 rounded-full z-20 shadow-md border-2 border-yellow-500">
+                        <span id="result-student-name"></span>의 꿈
+                    </div>
+                    
+                    <!-- 미디어 영역 (사진 또는 영상) -->
+                    <div class="h-72 md:h-80 bg-slate-200 relative overflow-hidden flex items-center justify-center">
+                        <img id="result-image" class="w-full h-full object-contain hidden" src="" alt="나의 미래 모습">
+                        <video id="result-video" class="w-full h-full object-contain hidden" controls></video>
+                    </div>
+                    
+                    <!-- 콘텐츠 영역 -->
+                    <div class="p-6 md:p-8 bg-gradient-to-b from-white to-yellow-50">
+                        <h2 id="result-job" class="text-3xl md:text-4xl font-extrabold text-slate-800 mb-4 text-center"></h2>
+                        <div class="flex flex-wrap justify-center gap-2 mb-6" id="result-chars">
+                            <!-- 특징 태그들이 여기 들어갑니다 -->
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl shadow-inner border-2 border-slate-100">
+                            <p id="result-story" class="text-xl md:text-2xl text-slate-700 leading-relaxed font-bold break-words"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <button onclick="location.reload()" class="bg-blue-500 hover:bg-blue-600 text-white text-2xl font-bold py-4 px-10 rounded-2xl shadow-lg">처음부터 다시하기</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 캡처용 숨겨진 캔버스 -->
+    <canvas id="photo-canvas" class="hidden"></canvas>
+
+    <script>
+        // 직업군 및 세부 직업 데이터
+        const jobCategories = {
+            '사무·행정': ['사무보조', '문서관리 보조', '우편물 분류', '인쇄·제본 보조'],
+            '도서·교육': ['사서보조', '서점 도서정리', '교구관리 보조'],
+            '카페·외식': ['바리스타', '카페 운영보조', '홀서비스', '주방보조'],
+            '제과·식품': ['제과제빵사', '제과제빵 보조', '식품생산 보조', '식품포장'],
+            '판매·유통': ['편의점 매장보조', '상품진열', '의류매장 보조', '물품 분류'],
+            '제조·생산': ['부품조립', '제품검수 보조', '라벨부착', '생산보조'],
+            '환경·원예': ['환경미화', '원예관리 보조', '정원관리 보조', '세차 보조'],
+            '보건·시설지원': ['휠마스터', '병원 린넨관리', '병원 환경관리'],
+            '디지털·미디어': ['영상편집자', '사진편집자', '문서입력', '콘텐츠 제작 보조']
+        };
+
+        // 직업별 기본 특징 데이터 (선생님이 화면에서 수정 가능)
+        const jobData = {
+            '사무보조': ['컴퓨터로 문서를 작성해요', '서류를 복사하고 정리해요', '전화 응대를 도와줘요'],
+            '문서관리 보조': ['서류를 가나다순으로 정리해요', '중요한 문서를 파일에 보관해요', '필요한 문서를 빠르게 찾아요'],
+            '우편물 분류': ['도착한 우편물을 부서별로 나눠요', '우편물 대장을 꼼꼼히 작성해요', '정확한 곳으로 전달해요'],
+            '인쇄·제본 보조': ['복사기로 인쇄를 해요', '인쇄된 종이를 순서대로 묶어요', '책자 형태로 깔끔하게 만들어요'],
+            '사서보조': ['반납된 책을 제자리에 꽂아요', '찢어진 책을 보수해요', '도서관을 깨끗하게 정리해요'],
+            '서점 도서정리': ['새로 들어온 책을 진열해요', '베스트셀러 코너를 꾸며요', '책 먼지를 털고 관리해요'],
+            '교구관리 보조': ['수업에 필요한 교구를 준비해요', '사용한 교구를 깨끗이 닦아요', '교구를 종류별로 상자에 정리해요'],
+            '바리스타': ['다양한 커피콩의 맛을 알아요', '친절한 미소로 인사해요', '맛있는 커피를 내려요'],
+            '카페 운영보조': ['테이블을 깨끗하게 닦아요', '빨대와 냅킨을 채워 넣어요', '재활용 쓰레기를 분리해요'],
+            '홀서비스': ['손님에게 메뉴판을 드려요', '주문한 음식을 안전하게 서빙해요', '다 먹은 그릇을 치워요'],
+            '주방보조': ['채소와 식재료를 깨끗이 씻어요', '그릇과 컵을 설거지해요', '주방을 청결하게 유지해요'],
+            '제과제빵사': ['매일 신선한 빵을 구워요', '예쁜 케이크를 디자인해요', '정확한 레시피를 지켜요'],
+            '제과제빵 보조': ['빵틀에 버터를 발라요', '밀가루를 체에 쳐서 준비해요', '오븐 주변을 청소해요'],
+            '식품생산 보조': ['정확한 양의 재료를 덜어요', '완성된 식품의 불량을 확인해요', '위생복과 마스크를 착용해요'],
+            '식품포장': ['식품을 봉투나 상자에 넣어요', '유통기한 스티커를 붙여요', '포장된 제품을 상자에 담아요'],
+            '편의점 매장보조': ['물건의 바코드를 찍어요', '유통기한이 지난 상품을 빼요', '매대와 바닥을 청소해요'],
+            '상품진열': ['상품을 보기 좋게 나열해요', '비어있는 상품을 채워 넣어요', '가격표가 잘 보이게 정리해요'],
+            '의류매장 보조': ['옷걸이에 옷을 반듯하게 걸어요', '사이즈별로 옷을 정리해요', '피팅룸을 깨끗하게 치워요'],
+            '물품 분류': ['택배 상자를 지역별로 나눠요', '물건이 파손되지 않게 조심해요', '수량과 목록이 맞는지 확인해요'],
+            '부품조립': ['작은 부품들을 순서대로 맞춰요', '전동 드라이버를 안전하게 써요', '조립이 잘 되었는지 확인해요'],
+            '제품검수 보조': ['제품에 흠집이 없는지 살펴봐요', '작동이 잘 되는지 테스트해요', '불량품을 따로 골라내요'],
+            '라벨부착': ['제품에 상표 스티커를 붙여요', '삐뚤어지지 않게 반듯하게 붙여요', '정해진 위치에 정확히 붙여요'],
+            '생산보조': ['필요한 부품을 작업대로 옮겨요', '작업이 끝난 자리를 정리해요', '안전 수칙을 잘 지켜요'],
+            '환경미화': ['빗자루로 길거리를 쓸어요', '쓰레기통을 비우고 닦아요', '깨끗한 환경을 만들어줘요'],
+            '원예관리 보조': ['식물에 알맞은 양의 물을 줘요', '시든 잎과 잡초를 뽑아요', '화분에 흙을 채워 넣어요'],
+            '정원관리 보조': ['잔디를 깎고 가지를 쳐요', '정원 도구를 안전하게 다뤄요', '아름다운 정원을 가꾸어요'],
+            '세차 보조': ['자동차 표면에 거품을 칠해요', '고압 호스로 물을 뿌려요', '마른걸레로 물기를 닦아내요'],
+            '휠마스터': ['휠체어를 안전하게 점검해요', '바퀴에 바람을 넣고 고쳐요', '환자분들이 편하게 쓰게 도와요'],
+            '병원 린넨관리': ['환자복과 침대 시트를 수거해요', '깨끗한 세탁물을 병실에 줘요', '수건과 시트를 반듯하게 개어요'],
+            '병원 환경관리': ['병실 바닥을 소독하고 닦아요', '손잡이와 문을 깨끗하게 유지해요', '의료 폐기물을 안전하게 버려요'],
+            '영상편집자': ['영상을 재미있게 잘라요', '어울리는 음악을 넣어요', '멋진 효과를 만들어요'],
+            '사진편집자': ['사진의 밝기를 조절해요', '필요 없는 부분을 지워요', '사진을 더 예쁘게 꾸며요'],
+            '문서입력': ['종이 문서를 컴퓨터에 타이핑해요', '오타가 없는지 꼼꼼히 확인해요', '데이터를 표에 깔끔하게 정리해요'],
+            '콘텐츠 제작 보조': ['촬영에 필요한 소품을 준비해요', '인터넷에서 필요한 자료를 찾아요', '촬영 현장을 돕고 정리해요']
+        };
+
+        let currentJob = '';
+        let mediaType = 'none'; // 'photo', 'video', 'none'
+        let currentMediaUrl = '';
+        let videoStream = null;
+        
+        let mediaRecorder;
+        let recordedChunks = [];
+        let isRecording = false;
+
+        // 메시지 박스 함수 (alert 대체)
+        function showMessage(text) {
+            document.getElementById('message-text').innerText = text;
+            document.getElementById('message-modal').classList.remove('hidden');
+        }
+
+        function closeMessage() {
+            document.getElementById('message-modal').classList.add('hidden');
+        }
+
+        // 앱 초기화: 직업군 드롭다운 채우기
+        function initDropdowns() {
+            const categorySelect = document.getElementById('job-category');
+            for (const category in jobCategories) {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                categorySelect.appendChild(option);
+            }
+        }
+
+        // 직업군 선택 시 세부 직업 드롭다운 업데이트
+        function updateJobOptions() {
+            const category = document.getElementById('job-category').value;
+            const specificSelect = document.getElementById('job-specific');
+            const charsArea = document.getElementById('characteristics-area');
+            
+            specificSelect.innerHTML = '<option value="">-- 세부 직업을 선택하세요 --</option>';
+            currentJob = '';
+            charsArea.classList.add('hidden');
+            
+            if (category) {
+                specificSelect.disabled = false;
+                const jobs = jobCategories[category];
+                jobs.forEach(job => {
+                    const option = document.createElement('option');
+                    option.value = job;
+                    option.textContent = job;
+                    specificSelect.appendChild(option);
+                });
+            } else {
+                specificSelect.disabled = true;
+                specificSelect.innerHTML = '<option value="">-- 먼저 직업군을 선택하세요 --</option>';
+            }
+        }
+
+        // 세부 직업 선택 처리
+        function handleJobSelect() {
+            const specificSelect = document.getElementById('job-specific');
+            const jobName = specificSelect.value;
+            currentJob = jobName;
+            
+            const charsArea = document.getElementById('characteristics-area');
+            if (jobName) {
+                charsArea.classList.remove('hidden');
+                
+                const chars = jobData[jobName] || ['특징을 입력해주세요', '특징을 입력해주세요', '특징을 입력해주세요'];
+                for (let i = 1; i <= 3; i++) {
+                    document.getElementById(`char-${i}`).value = chars[i-1];
+                }
+            } else {
+                charsArea.classList.add('hidden');
+            }
+        }
+
+        // 단계 이동 처리
+        function nextStep(step) {
+            if (step === 2) {
+                const studentName = document.getElementById('student-name').value.trim();
+                if (!studentName) {
+                    showMessage('이름을 입력해주세요!');
+                    return;
+                }
+                if (!currentJob) {
+                    showMessage('어떤 일을 하고 싶은지 선택해주세요!');
+                    return;
+                }
+                const c1 = document.getElementById('char-1').value.trim();
+                const c2 = document.getElementById('char-2').value.trim();
+                const c3 = document.getElementById('char-3').value.trim();
+                if (!c1 || !c2 || !c3) {
+                    showMessage('직업의 특징 3가지를 모두 적어주세요!');
+                    return;
+                }
+                const story = document.getElementById('story-input').value.trim();
+                if (!story) {
+                    showMessage('미래의 내 모습을 짧게 이야기해주세요!');
+                    return;
+                }
+            }
+
+            if (step === 3) {
+                if (mediaType === 'none' || !currentMediaUrl) {
+                    showMessage('사진이나 영상을 먼저 준비해주세요!');
+                    return;
+                }
+                createFinalVideo();
+            }
+
+            showStep(step);
+        }
+
+        function prevStep(step) {
+            showStep(step);
+            stopCamera(); 
+        }
+
+        function showStep(step) {
+            document.querySelectorAll('.step-container').forEach(el => {
+                el.classList.remove('active-step');
+                el.classList.add('hidden-step');
+            });
+            
+            document.getElementById(`step-${step}`).classList.remove('hidden-step');
+            document.getElementById(`step-${step}`).classList.add('active-step');
+
+            for (let i = 1; i <= 3; i++) {
+                const ind = document.getElementById(`indicator-${i}`);
+                if (ind) {
+                    if (i === step) {
+                        ind.className = 'text-green-600 font-bold';
+                    } else if (i < step) {
+                        ind.className = 'text-green-400';
+                    } else {
+                        ind.className = 'text-slate-400 font-normal';
+                    }
+                }
+            }
+        }
+
+        // 앨범에서 사진/영상 파일 선택 처리
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                if (file.type.startsWith('image/')) {
+                    setPhotoAndPreview(url);
+                } else if (file.type.startsWith('video/')) {
+                    setVideoAndPreview(url);
+                } else {
+                    showMessage('이미지 또는 동영상 파일만 선택 가능합니다.');
+                }
+            }
+        }
+
+        // 카메라 스트림 시작
+        async function startCamera() {
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'user' },
+                    audio: true // 오디오 포함하여 영상 녹화 지원
+                });
+                const video = document.getElementById('camera-stream');
+                video.srcObject = videoStream;
+                
+                document.getElementById('photo-controls').classList.add('hidden');
+                video.classList.remove('hidden');
+                document.getElementById('capture-controls').classList.remove('hidden');
+                
+            } catch (err) {
+                console.error('카메라/마이크 접근 오류:', err);
+                showMessage('카메라 및 마이크를 사용할 수 없습니다. 권한을 확인하거나 앨범 선택을 이용해주세요.');
+            }
+        }
+
+        // 카메라 정지
+        function stopCamera() {
+            if (isRecording) {
+                toggleRecording(); // 녹화 중지 처리
+            }
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            document.getElementById('camera-stream').classList.add('hidden');
+            document.getElementById('capture-controls').classList.add('hidden');
+            if(mediaType === 'none') {
+                document.getElementById('photo-controls').classList.remove('hidden');
+            }
+        }
+
+        // 사진 캡처
+        function takePhoto() {
+            if (isRecording) return; // 녹화 중엔 캡처 금지
+            
+            const video = document.getElementById('camera-stream');
+            const canvas = document.getElementById('photo-canvas');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const dataUrl = canvas.toDataURL('image/png');
+            
+            stopCamera();
+            setPhotoAndPreview(dataUrl);
+        }
+
+        // 영상 녹화 토글
+        function toggleRecording() {
+            const recordBtn = document.getElementById('record-btn');
+            const indicator = document.getElementById('recording-indicator');
+
+            if (isRecording) {
+                // 녹화 중지
+                mediaRecorder.stop();
+                isRecording = false;
+                recordBtn.innerHTML = '🔴 영상 녹화';
+                recordBtn.classList.replace('bg-red-600', 'bg-red-500');
+                indicator.classList.add('hidden');
+            } else {
+                // 녹화 시작
+                if (!videoStream) return;
+                
+                recordedChunks = [];
+                // webm 형식 우선 지원
+                const options = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 
+                                { mimeType: 'video/webm;codecs=vp9,opus' } : {};
+                
+                try {
+                    mediaRecorder = new MediaRecorder(videoStream, options);
+                } catch(e) {
+                    mediaRecorder = new MediaRecorder(videoStream); // Fallback
+                }
+                
+                mediaRecorder.ondataavailable = function(e) {
+                    if (e.data && e.data.size > 0) {
+                        recordedChunks.push(e.data);
+                    }
+                };
+
+                mediaRecorder.onstop = function() {
+                    const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    stopCamera();
+                    setVideoAndPreview(url);
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                recordBtn.innerHTML = '⏹ 녹화 중지';
+                recordBtn.classList.replace('bg-red-500', 'bg-red-600');
+                indicator.classList.remove('hidden');
+            }
+        }
+
+        function setPhotoAndPreview(url) {
+            mediaType = 'photo';
+            currentMediaUrl = url;
+            
+            const preview = document.getElementById('photo-preview');
+            preview.src = url;
+            preview.classList.remove('hidden');
+            document.getElementById('video-preview').classList.add('hidden');
+            
+            document.getElementById('photo-controls').classList.add('hidden');
+            document.getElementById('retake-btn').classList.remove('hidden');
+        }
+
+        function setVideoAndPreview(url) {
+            mediaType = 'video';
+            currentMediaUrl = url;
+            
+            const preview = document.getElementById('video-preview');
+            preview.src = url;
+            preview.classList.remove('hidden');
+            document.getElementById('photo-preview').classList.add('hidden');
+            
+            document.getElementById('photo-controls').classList.add('hidden');
+            document.getElementById('retake-btn').classList.remove('hidden');
+        }
+
+        function resetMedia() {
+            mediaType = 'none';
+            currentMediaUrl = '';
+            
+            document.getElementById('photo-preview').classList.add('hidden');
+            document.getElementById('photo-preview').src = '';
+            
+            document.getElementById('video-preview').classList.add('hidden');
+            document.getElementById('video-preview').src = '';
+            
+            document.getElementById('retake-btn').classList.add('hidden');
+            document.getElementById('photo-controls').classList.remove('hidden');
+            document.getElementById('file-upload').value = ''; 
+        }
+
+        function createFinalVideo() {
+            const studentName = document.getElementById('student-name').value.trim();
+            const c1 = document.getElementById('char-1').value;
+            const c2 = document.getElementById('char-2').value;
+            const c3 = document.getElementById('char-3').value;
+            const story = document.getElementById('story-input').value;
+
+            document.getElementById('result-student-name').innerText = studentName;
+            document.getElementById('result-job').innerText = `미래의 ${currentJob}`;
+            document.getElementById('result-story').innerText = story;
+
+            // 미디어 적용
+            const imgEl = document.getElementById('result-image');
+            const videoEl = document.getElementById('result-video');
+            
+            if (mediaType === 'photo') {
+                imgEl.src = currentMediaUrl;
+                imgEl.classList.remove('hidden');
+                videoEl.classList.add('hidden');
+            } else if (mediaType === 'video') {
+                videoEl.src = currentMediaUrl;
+                videoEl.classList.remove('hidden');
+                imgEl.classList.add('hidden');
+            }
+
+            const charsContainer = document.getElementById('result-chars');
+            charsContainer.innerHTML = ''; 
+            [c1, c2, c3].forEach(char => {
+                const span = document.createElement('span');
+                span.className = 'bg-blue-100 text-blue-800 text-base md:text-lg font-bold px-4 py-2 rounded-full border-2 border-blue-200';
+                span.innerText = `#${char}`;
+                charsContainer.appendChild(span);
+            });
+            
+            document.querySelector('.border-b-2').style.display = 'none';
+        }
+
+        // 스크립트가 로드되면 드롭다운 초기화 실행
+        initDropdowns();
+
+    </script>
+</body>
+</html>
